@@ -1,0 +1,25 @@
+From 29efa638f82e157b2b1d4149641c2b9b7a83710a Mon Sep 17 00:00:00 2001
+From: r3vn <giuseppe.corti@protonmail.com>
+Date: Sun, 23 Feb 2020 23:23:10 +0100
+Subject: [PATCH] wl_seat patch
+
+---
+ hw/xwayland/xwayland-input.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hw/xwayland/xwayland-input.c b/hw/xwayland/xwayland-input.c
+index beaac19..f8bbe32 100644
+--- a/hw/xwayland/xwayland-input.c
++++ b/hw/xwayland/xwayland-input.c
+@@ -2483,7 +2483,7 @@ input_handler(void *data, struct wl_registry *registry, uint32_t id,
+ {
+     struct xwl_screen *xwl_screen = data;
+ 
+-    if (strcmp(interface, "wl_seat") == 0 && version >= 3) {
++    if (strcmp(interface, "wl_seat") == 0 && version >= 2) {
+         create_input_device(xwl_screen, id, version);
+         xwl_screen->expecting_event++;
+     } else if (strcmp(interface, "zwp_relative_pointer_manager_v1") == 0) {
+-- 
+2.40.0
+
