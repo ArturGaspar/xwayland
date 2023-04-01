@@ -1,0 +1,30 @@
+From 72b3bc479452da267762ca15bd737edaf4725683 Mon Sep 17 00:00:00 2001
+From: Artur Gaspar <artur.gaspar.00@gmail.com>
+Date: Sat, 1 Apr 2023 01:46:03 -0300
+Subject: [PATCH 1/2] Revert "xwayland: non-rootless requires the XDG-WM-Base
+ protocol"
+
+This reverts commit ffd02d9b26bd560849c407a6dd4f5c4d7d2c1736.
+---
+ hw/xwayland/xwayland-screen.c | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/hw/xwayland/xwayland-screen.c b/hw/xwayland/xwayland-screen.c
+index c18e2fbb5..bc6751be7 100644
+--- a/hw/xwayland/xwayland-screen.c
++++ b/hw/xwayland/xwayland-screen.c
+@@ -635,11 +635,6 @@ xwl_screen_init(ScreenPtr pScreen, int argc, char **argv)
+                              &registry_listener, xwl_screen);
+     xwl_screen_roundtrip(xwl_screen);
+ 
+-    if (!xwl_screen->rootless && !xwl_screen->xdg_wm_base) {
+-        ErrorF("missing XDG-WM-Base protocol\n");
+-        return FALSE;
+-    }
+-
+     bpc = xwl_screen->depth / 3;
+     green_bpc = xwl_screen->depth - 2 * bpc;
+     blue_mask = (1 << bpc) - 1;
+-- 
+2.40.0
+
