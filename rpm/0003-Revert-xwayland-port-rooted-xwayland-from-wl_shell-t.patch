@@ -1,7 +1,7 @@
-From 861e89c4f77262c7021b6777502bff84f3da9d4d Mon Sep 17 00:00:00 2001
+From 2341220e3c3f04d4ab27008e6a841f107963e32c Mon Sep 17 00:00:00 2001
 From: Artur Gaspar <artur.gaspar.00@gmail.com>
-Date: Sat, 1 Apr 2023 01:46:37 -0300
-Subject: [PATCH 2/2] Revert "xwayland: port rooted xwayland from wl_shell to
+Date: Thu, 20 Jun 2024 03:27:54 -0300
+Subject: [PATCH 3/3] Revert "xwayland: port rooted xwayland from wl_shell to
  xdg-shell protocol"
 
 This reverts commit 3d6efc4aaff80301c0b10b7b6ba297eb5e54c1a0.
@@ -14,38 +14,38 @@ This reverts commit 3d6efc4aaff80301c0b10b7b6ba297eb5e54c1a0.
  5 files changed, 33 insertions(+), 41 deletions(-)
 
 diff --git a/hw/xwayland/meson.build b/hw/xwayland/meson.build
-index e848daf0d..8830a6d0c 100644
+index 37c39497c..7296d5ed5 100644
 --- a/hw/xwayland/meson.build
 +++ b/hw/xwayland/meson.build
-@@ -41,7 +41,6 @@ kbgrab_xml = join_paths(protodir, 'unstable', 'xwayland-keyboard-grab', 'xwaylan
+@@ -44,7 +44,6 @@ kbgrab_xml = join_paths(protodir, 'unstable', 'xwayland-keyboard-grab', 'xwaylan
  xdg_output_xml = join_paths(protodir, 'unstable', 'xdg-output', 'xdg-output-unstable-v1.xml')
  dmabuf_xml = join_paths(protodir, 'unstable', 'linux-dmabuf', 'linux-dmabuf-unstable-v1.xml')
  viewporter_xml = join_paths(protodir, 'stable', 'viewporter', 'viewporter.xml')
 -xdg_shell_xml = join_paths(protodir, 'stable', 'xdg-shell', 'xdg-shell.xml')
+ drm_lease_xml = join_paths(protodir, 'staging', 'drm-lease', 'drm-lease-v1.xml')
  
  client_header = generator(scanner,
-     output : '@BASENAME@-client-protocol.h',
-@@ -65,7 +64,6 @@ srcs += client_header.process(kbgrab_xml)
+@@ -70,7 +69,6 @@ srcs += client_header.process(kbgrab_xml)
  srcs += client_header.process(xdg_output_xml)
  srcs += client_header.process(dmabuf_xml)
  srcs += client_header.process(viewporter_xml)
 -srcs += client_header.process(xdg_shell_xml)
+ srcs += client_header.process(drm_lease_xml)
  srcs += code.process(relative_xml)
  srcs += code.process(pointer_xml)
- srcs += code.process(tablet_xml)
-@@ -73,7 +71,6 @@ srcs += code.process(kbgrab_xml)
+@@ -80,7 +78,6 @@ srcs += code.process(kbgrab_xml)
  srcs += code.process(xdg_output_xml)
  srcs += code.process(dmabuf_xml)
  srcs += code.process(viewporter_xml)
 -srcs += code.process(xdg_shell_xml)
+ srcs += code.process(drm_lease_xml)
  
  xwayland_glamor = []
- eglstream_srcs = []
 diff --git a/hw/xwayland/xwayland-screen.c b/hw/xwayland/xwayland-screen.c
-index bc6751be7..82583de2b 100644
+index 67799af2c..8a90dc3e6 100644
 --- a/hw/xwayland/xwayland-screen.c
 +++ b/hw/xwayland/xwayland-screen.c
-@@ -54,7 +54,6 @@
+@@ -58,7 +58,6 @@
  
  #include "xdg-output-unstable-v1-client-protocol.h"
  #include "viewporter-client-protocol.h"
@@ -53,7 +53,7 @@ index bc6751be7..82583de2b 100644
  
  static DevPrivateKeyRec xwl_screen_private_key;
  static DevPrivateKeyRec xwl_client_private_key;
-@@ -341,17 +340,6 @@ xwl_screen_post_damage(struct xwl_screen *xwl_screen)
+@@ -374,17 +373,6 @@ xwl_screen_post_damage(struct xwl_screen *xwl_screen)
      }
  }
  
@@ -71,7 +71,7 @@ index bc6751be7..82583de2b 100644
  static void
  registry_global(void *data, struct wl_registry *registry, uint32_t id,
                  const char *interface, uint32_t version)
-@@ -370,12 +358,9 @@ registry_global(void *data, struct wl_registry *registry, uint32_t id,
+@@ -403,12 +391,9 @@ registry_global(void *data, struct wl_registry *registry, uint32_t id,
      else if (strcmp(interface, "wl_shm") == 0) {
          xwl_screen->shm = wl_registry_bind(registry, id, &wl_shm_interface, 1);
      }
@@ -88,10 +88,10 @@ index bc6751be7..82583de2b 100644
      else if (strcmp(interface, "wl_output") == 0 && version >= 2) {
          if (xwl_output_create(xwl_screen, id))
 diff --git a/hw/xwayland/xwayland-screen.h b/hw/xwayland/xwayland-screen.h
-index b965dddd7..82605a8a7 100644
+index 6d1e7d1bd..7c2d353c5 100644
 --- a/hw/xwayland/xwayland-screen.h
 +++ b/hw/xwayland/xwayland-screen.h
-@@ -79,7 +79,7 @@ struct xwl_screen {
+@@ -83,7 +83,7 @@ struct xwl_screen {
      struct wl_compositor *compositor;
      struct zwp_tablet_manager_v2 *tablet_manager;
      struct wl_shm *shm;
@@ -99,9 +99,9 @@ index b965dddd7..82605a8a7 100644
 +    struct wl_shell *shell;
      struct zwp_relative_pointer_manager_v1 *relative_pointer_manager;
      struct zwp_pointer_constraints_v1 *pointer_constraints;
-     struct zwp_xwayland_keyboard_grab_manager_v1 *wp_grab;
+     struct zwp_pointer_gestures_v1 *pointer_gestures;
 diff --git a/hw/xwayland/xwayland-window.c b/hw/xwayland/xwayland-window.c
-index 00f161eda..a45ac7977 100644
+index ba7d7af0b..8d21c39fd 100644
 --- a/hw/xwayland/xwayland-window.c
 +++ b/hw/xwayland/xwayland-window.c
 @@ -44,7 +44,6 @@
@@ -110,9 +110,9 @@ index 00f161eda..a45ac7977 100644
  #include "viewporter-client-protocol.h"
 -#include "xdg-shell-client-protocol.h"
  
- static DevPrivateKeyRec xwl_window_private_key;
- static DevPrivateKeyRec xwl_damage_private_key;
-@@ -402,15 +401,28 @@ send_surface_id_event(struct xwl_window *xwl_window)
+ #define DELAYED_WL_SURFACE_DESTROY 1000 /* ms */
+ 
+@@ -424,15 +423,28 @@ send_surface_id_event(struct xwl_window *xwl_window)
  }
  
  static void
@@ -147,7 +147,7 @@ index 00f161eda..a45ac7977 100644
  };
  
  static Bool
-@@ -449,19 +461,17 @@ ensure_surface_for_window(WindowPtr window)
+@@ -471,19 +483,17 @@ ensure_surface_for_window(WindowPtr window)
      }
  
      if (!xwl_screen->rootless) {
@@ -174,7 +174,7 @@ index 00f161eda..a45ac7977 100644
  
          region = wl_compositor_create_region(xwl_screen->compositor);
          if (region == NULL) {
-@@ -510,8 +520,8 @@ ensure_surface_for_window(WindowPtr window)
+@@ -533,8 +543,8 @@ ensure_surface_for_window(WindowPtr window)
      return TRUE;
  
  err_surf:
@@ -186,10 +186,10 @@ index 00f161eda..a45ac7977 100644
  err:
      free(xwl_window);
 diff --git a/hw/xwayland/xwayland-window.h b/hw/xwayland/xwayland-window.h
-index d94f07204..86292e930 100644
+index 6245e47b5..68f5db63c 100644
 --- a/hw/xwayland/xwayland-window.h
 +++ b/hw/xwayland/xwayland-window.h
-@@ -42,7 +42,7 @@ struct xwl_window {
+@@ -48,7 +48,7 @@ struct xwl_window {
      struct wl_surface *surface;
      struct wp_viewport *viewport;
      float scale_x, scale_y;
@@ -199,5 +199,5 @@ index d94f07204..86292e930 100644
      struct xorg_list link_damage;
      struct xorg_list link_window;
 -- 
-2.40.0
+2.45.2
 

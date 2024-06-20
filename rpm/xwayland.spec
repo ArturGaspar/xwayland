@@ -1,6 +1,6 @@
 Name:       xwayland
 Summary:    Xwayland
-Version:    21.1.4
+Version:    22.1.9
 Release:    1%{?dist}
 URL:        https://gitlab.freedesktop.org/xorg/xserver
 Source0:    %{name}-%{version}.tar.bz2
@@ -10,21 +10,22 @@ Patch1:     0002-Revert-xwayland-non-rootless-requires-the-XDG-WM-Bas.patch
 Patch2:     0003-Revert-xwayland-port-rooted-xwayland-from-wl_shell-t.patch
 Requires:   xkbcomp
 BuildRequires:  ccache
-BuildRequires:  meson >= 0.46.0
+BuildRequires:  meson >= 0.47.0
 BuildRequires:  pkgconfig(bigreqsproto) >= 1.1.0
 BuildRequires:  pkgconfig(compositeproto) >= 0.4
 BuildRequires:  pkgconfig(damageproto) >= 1.1
 BuildRequires:  pkgconfig(dri)
 BuildRequires:  pkgconfig(dri3proto) >= 1.2
 BuildRequires:  pkgconfig(epoxy)
-BuildRequires:  pkgconfig(fixesproto) >= 5.0
+BuildRequires:  pkgconfig(fixesproto) >= 6.0
 BuildRequires:  pkgconfig(fontsproto) >= 2.1.3
 BuildRequires:  pkgconfig(fontutil)
 BuildRequires:  pkgconfig(gbm) >= 10.2
-BuildRequires:  pkgconfig(inputproto) >= 2.3
+BuildRequires:  pkgconfig(inputproto) >= 2.3.99.1
 BuildRequires:  pkgconfig(kbproto) >= 1.0.3
 BuildRequires:  pkgconfig(libdrm) >= 2.4.89
 BuildRequires:  pkgconfig(libgcrypt)
+BuildRequires:  pkgconfig(libxcvt)
 BuildRequires:  pkgconfig(pixman-1)
 BuildRequires:  pkgconfig(randrproto) >= 1.6.0
 BuildRequires:  pkgconfig(recordproto) >= 1.13.99.1
@@ -32,8 +33,8 @@ BuildRequires:  pkgconfig(renderproto) >= 0.11
 BuildRequires:  pkgconfig(resourceproto) >= 1.2.0
 BuildRequires:  pkgconfig(scrnsaverproto) >= 1.1
 BuildRequires:  pkgconfig(videoproto)
-BuildRequires:  pkgconfig(wayland-client) >= 1.3.0
-BuildRequires:  pkgconfig(wayland-protocols) >= 1.18
+BuildRequires:  pkgconfig(wayland-client) >= 1.18.0
+BuildRequires:  pkgconfig(wayland-protocols) >= 1.22
 BuildRequires:  pkgconfig(xcmiscproto) >= 1.2.0
 BuildRequires:  pkgconfig(xextproto) >= 7.2.99.901
 BuildRequires:  pkgconfig(xf86bigfontproto) >= 1.2.0
