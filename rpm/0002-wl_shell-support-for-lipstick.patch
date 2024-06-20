@@ -1,0 +1,141 @@
+From 2dfbd59fbc7d38419b84dda18092376b9d1aeeeb Mon Sep 17 00:00:00 2001
+From: Artur Gaspar <artur.gaspar.00@gmail.com>
+Date: Thu, 20 Jun 2024 10:44:47 -0300
+Subject: [PATCH 2/2] wl_shell support (for lipstick)
+
+---
+ hw/xwayland/xwayland-screen.c |  8 +++++--
+ hw/xwayland/xwayland-screen.h |  1 +
+ hw/xwayland/xwayland-window.c | 44 ++++++++++++++++++++++++++++++++++-
+ hw/xwayland/xwayland-window.h |  1 +
+ 4 files changed, 51 insertions(+), 3 deletions(-)
+
+diff --git a/hw/xwayland/xwayland-screen.c b/hw/xwayland/xwayland-screen.c
+index cc14e0771..c60b6f130 100644
+--- a/hw/xwayland/xwayland-screen.c
++++ b/hw/xwayland/xwayland-screen.c
+@@ -428,6 +428,10 @@ registry_global(void *data, struct wl_registry *registry, uint32_t id,
+     else if (strcmp(interface, "wl_shm") == 0) {
+         xwl_screen->shm = wl_registry_bind(registry, id, &wl_shm_interface, 1);
+     }
++    else if (strcmp(interface, "wl_shell") == 0) {
++        xwl_screen->shell =
++            wl_registry_bind(registry, id, &wl_shell_interface, 1);
++    }
+     else if (strcmp(interface, "xdg_wm_base") == 0) {
+         xwl_screen->xdg_wm_base =
+             wl_registry_bind(registry, id, &xdg_wm_base_interface, 1);
+@@ -898,8 +902,8 @@ xwl_screen_init(ScreenPtr pScreen, int argc, char **argv)
+         return FALSE;
+     }
+ 
+-    if (!xwl_screen->rootless && !xwl_screen->xdg_wm_base) {
+-        ErrorF("missing XDG-WM-Base protocol\n");
++    if (!xwl_screen->rootless && !(xwl_screen->xdg_wm_base || xwl_screen->shell)) {
++        ErrorF("missing XDG-WM-Base or wl_shell protocol\n");
+         return FALSE;
+     }
+ 
+diff --git a/hw/xwayland/xwayland-screen.h b/hw/xwayland/xwayland-screen.h
+index 17aa31c73..1220e9a6d 100644
+--- a/hw/xwayland/xwayland-screen.h
++++ b/hw/xwayland/xwayland-screen.h
+@@ -95,6 +95,7 @@ struct xwl_screen {
+     struct wl_compositor *compositor;
+     struct zwp_tablet_manager_v2 *tablet_manager;
+     struct wl_shm *shm;
++    struct wl_shell *shell;
+     struct xdg_wm_base *xdg_wm_base;
+     struct zwp_relative_pointer_manager_v1 *relative_pointer_manager;
+     struct zwp_pointer_constraints_v1 *pointer_constraints;
+diff --git a/hw/xwayland/xwayland-window.c b/hw/xwayland/xwayland-window.c
+index e932ce4cf..3e8edefb2 100644
+--- a/hw/xwayland/xwayland-window.c
++++ b/hw/xwayland/xwayland-window.c
+@@ -730,6 +730,31 @@ static struct libdecor_frame_interface libdecor_frame_iface = {
+ };
+ #endif
+ 
++static void
++shell_surface_ping(void *data,
++                   struct wl_shell_surface *shell_surface, uint32_t serial)
++{
++    wl_shell_surface_pong(shell_surface, serial);
++}
++
++static void
++shell_surface_configure(void *data,
++                        struct wl_shell_surface *wl_shell_surface,
++                        uint32_t edges, int32_t width, int32_t height)
++{
++}
++
++static void
++shell_surface_popup_done(void *data, struct wl_shell_surface *wl_shell_surface)
++{
++}
++
++static const struct wl_shell_surface_listener shell_surface_listener = {
++    shell_surface_ping,
++    shell_surface_configure,
++    shell_surface_popup_done
++};
++
+ static void
+ xdg_surface_handle_configure(void *data,
+                              struct xdg_surface *xdg_surface,
+@@ -834,7 +859,7 @@ xwl_create_root_surface(struct xwl_window *xwl_window)
+     }
+     else
+ #endif
+-    {
++    if (xwl_screen->xdg_wm_base != NULL) {
+         xwl_window->xdg_surface =
+             xdg_wm_base_get_xdg_surface(xwl_screen->xdg_wm_base, xwl_window->surface);
+         if (xwl_window->xdg_surface == NULL) {
+@@ -858,6 +883,21 @@ xwl_create_root_surface(struct xwl_window *xwl_window)
+         xdg_toplevel_add_listener(xwl_window->xdg_toplevel,
+                                   &xdg_toplevel_listener,
+                                   xwl_window);
++    } else {
++        xwl_window->shell_surface =
++            wl_shell_get_shell_surface(xwl_screen->shell, xwl_window->surface);
++        if (xwl_window->shell_surface == NULL) {
++            ErrorF("Failed creating shell surface\n");
++            goto err_surf;
++        }
++
++        wl_surface_add_listener(xwl_window->surface,
++                                &surface_listener, xwl_window);
++
++        wl_shell_surface_add_listener(xwl_window->shell_surface,
++                                      &shell_surface_listener, xwl_window);
++
++        wl_shell_surface_set_toplevel(xwl_window->shell_surface);
+     }
+ 
+     xwl_window_rootful_update_title(xwl_window);
+@@ -882,6 +922,8 @@ err_surf:
+         xdg_toplevel_destroy(xwl_window->xdg_toplevel);
+     if (xwl_window->xdg_surface)
+         xdg_surface_destroy(xwl_window->xdg_surface);
++    if (xwl_window->shell_surface)
++        wl_shell_surface_destroy(xwl_window->shell_surface);
+     wl_surface_destroy(xwl_window->surface);
+ 
+     return FALSE;
+diff --git a/hw/xwayland/xwayland-window.h b/hw/xwayland/xwayland-window.h
+index 7fbb2a623..09f50e56b 100644
+--- a/hw/xwayland/xwayland-window.h
++++ b/hw/xwayland/xwayland-window.h
+@@ -98,6 +98,7 @@ struct xwl_window {
+     struct wl_surface *surface;
+     struct wp_viewport *viewport;
+     float scale_x, scale_y;
++    struct wl_shell_surface *shell_surface;
+     struct xdg_surface *xdg_surface;
+     struct xdg_toplevel *xdg_toplevel;
+     WindowPtr window;
+-- 
+2.45.2
+
